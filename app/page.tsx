@@ -162,7 +162,7 @@ export default function Home() {
         </section>
 
         {/* ── The Work (pillars as image + text rows) ─ */}
-        <section className="mx-auto max-w-6xl px-6 py-16">
+        <section className="mx-auto max-w-6xl overflow-x-clip px-6 py-16">
           <SectionHeading
             eyebrow="What we do"
             title="The Work We Do Together"
@@ -208,7 +208,7 @@ export default function Home() {
                         href={p.link.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group mt-5 inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+                        className="group mt-5 inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mb-1"
                       >
                         {p.link.label}
                         <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

@@ -59,9 +59,9 @@ export default function Reveal({
 
   const hidden =
     from === "left"
-      ? "opacity-0 -translate-x-10"
+      ? "opacity-0 -translate-x-6"
       : from === "right"
-      ? "opacity-0 translate-x-10"
+      ? "opacity-0 translate-x-6"
       : "opacity-0 translate-y-8";
 
   return (
