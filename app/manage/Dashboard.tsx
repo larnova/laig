@@ -949,6 +949,8 @@ function ChapterAdminRow({
   const [working, setWorking] = useState<"approve" | "delete" | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isPending = chapter.status === "pending";
+  // Pending applications start expanded so HQ sees the motivation immediately.
+  const [showApp, setShowApp] = useState(isPending);
 
   async function approve() {
     setWorking("approve");
@@ -1027,6 +1029,15 @@ function ChapterAdminRow({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          {chapter.motivation && (
+            <button
+              type="button"
+              onClick={() => setShowApp((o) => !o)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            >
+              {showApp ? "Hide" : "Application"}
+            </button>
+          )}
           {isPending && (
             <button
               type="button"
@@ -1061,6 +1072,41 @@ function ChapterAdminRow({
           </button>
         </div>
       </div>
+
+      {showApp && chapter.motivation && (
+        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Why they applied
+          </p>
+          <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+            {chapter.motivation}
+          </p>
+          {(chapter.github || chapter.linkedin) && (
+            <div className="mt-3 flex flex-wrap gap-3 text-xs">
+              {chapter.github && (
+                <a
+                  href={chapter.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-violet-700 hover:underline"
+                >
+                  GitHub ↗
+                </a>
+              )}
+              {chapter.linkedin && (
+                <a
+                  href={chapter.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-violet-700 hover:underline"
+                >
+                  LinkedIn ↗
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {confirmDelete && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">

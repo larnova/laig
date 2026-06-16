@@ -2,10 +2,12 @@ import {
   getChapters,
   saveChapters,
   saveMember,
+  getChapterForEmail,
   normalizeUniversity,
   type Chapter,
   type MemberRecord,
 } from "../../lib/store";
+import { isAdmin } from "../../lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +37,26 @@ export async function POST(request: Request) {
 
   if (!fullName) return fail("Full name is required.", "fullName");
   if (!EMAIL_RE.test(email)) return fail("A valid email is required.", "email");
+
+  // An email already tied to chapter management (ambassador / exec) or to LAIG
+  // HQ can't be reused to apply for or join a chapter.
+  const managed = await getChapterForEmail(email);
+  if (managed) {
+    return fail(
+      managed.role === "Campus Ambassador"
+        ? "This email is already a Campus Ambassador for a chapter. Sign in to your dashboard instead."
+        : "This email is already on a chapter's executive team. Sign in to your dashboard instead.",
+      "email",
+      409
+    );
+  }
+  if (isAdmin(email)) {
+    return fail(
+      "This email is a LAIG HQ account and can't be used to apply or join.",
+      "email",
+      409
+    );
+  }
 
   try {
     if (path === "ambassador") {
@@ -95,6 +117,7 @@ async function handleAmbassador(
     ambassadorEmail: email,
     github,
     linkedin,
+    motivation,
     createdAt: new Date().toISOString(),
     status: "pending", // awaits HQ review before going live
     graduationYear: gradYear,

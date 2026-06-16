@@ -46,6 +46,7 @@ export type Chapter = {
   ambassadorEmail: string;
   github: string;
   linkedin: string;
+  motivation: string; // why they applied — shown to HQ during review
   createdAt: string;
   status: ChapterStatus; // "pending" until LAIG HQ approves the request
   graduationYear: number | null; // current ambassador's expected graduation
@@ -154,6 +155,7 @@ export async function getChapters(): Promise<Chapter[]> {
     alumni: c.alumni ?? [],
     advisers: c.advisers ?? [],
     graduationYear: c.graduationYear ?? null,
+    motivation: c.motivation ?? "",
     // Chapters created before the approval flow are treated as approved.
     status: c.status ?? "approved",
   }));

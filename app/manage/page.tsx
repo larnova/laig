@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getManager } from "../lib/auth";
 import { getEvents, getChapters } from "../lib/store";
 import SignIn from "./SignIn";
@@ -13,9 +14,14 @@ export const metadata: Metadata = {
 export default async function ManagePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; token?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, token } = await searchParams;
+
+  // Magic links of the form /manage?token=… hand off to the verifier, which
+  // sets the session cookie and redirects back here WITHOUT the token.
+  if (token) redirect(`/api/auth/verify?token=${encodeURIComponent(token)}`);
+
   const manager = await getManager();
 
   if (!manager) {
