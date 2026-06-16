@@ -78,14 +78,14 @@ async function handleAmbassador(
   const chapters = await getChapters();
   const key = normalizeUniversity(university);
 
-  // One ambassador (one chapter) per university.
+  // One ambassador (one chapter) per university — pending requests count too.
   const existing = chapters.find((c) => normalizeUniversity(c.university) === key);
   if (existing) {
-    return fail(
-      `${existing.university} already has a chapter and Campus Ambassador. You can join it as a member instead.`,
-      "chapter_taken",
-      409
-    );
+    const msg =
+      existing.status === "pending"
+        ? `A chapter request for ${existing.university} is already under review by LAIG HQ.`
+        : `${existing.university} already has a chapter and Campus Ambassador. You can join it as a member instead.`;
+    return fail(msg, "chapter_taken", 409);
   }
 
   const chapter: Chapter = {
@@ -96,6 +96,7 @@ async function handleAmbassador(
     github,
     linkedin,
     createdAt: new Date().toISOString(),
+    status: "pending", // awaits HQ review before going live
     graduationYear: gradYear,
     execs: [],
     alumni: [],
@@ -108,6 +109,7 @@ async function handleAmbassador(
   return Response.json({
     ok: true,
     path: "ambassador",
+    pending: true,
     chapter: { id: chapter.id, university: chapter.university },
   });
 }
@@ -124,8 +126,9 @@ async function handleMember(body: Payload, fullName: string, email: string) {
   const chapters = await getChapters();
   const chapter = chapters.find((c) => c.id === chapterId);
 
-  // The chapter could have been removed between page load and submit.
-  if (!chapter) {
+  // The chapter could have been removed (or not yet approved) between page
+  // load and submit.
+  if (!chapter || chapter.status !== "approved") {
     return fail(
       "That chapter is no longer available. There may be no chapter at your university yet — consider becoming a Campus Ambassador.",
       "chapter_missing",

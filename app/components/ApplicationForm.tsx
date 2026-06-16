@@ -215,7 +215,7 @@ export default function ApplicationForm() {
         <p className="mx-auto mt-3 max-w-md text-slate-600">
           Thanks, {values.fullName.split(" ")[0] || "there"}.{" "}
           {isAmbassador
-            ? `Your chapter at ${values.university} is registered and you're set as its Campus Ambassador.`
+            ? `Your request to start the ${values.university} chapter is in. LAIG HQ reviews every chapter before it goes live — once approved you can sign in and set it up.`
             : "Your chapter membership application is in."}{" "}
           Keep an eye on <span className="font-medium text-slate-900">{values.email}</span>.
         </p>

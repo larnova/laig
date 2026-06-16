@@ -37,6 +37,8 @@ export type Adviser = {
   addedAt: string;
 };
 
+export type ChapterStatus = "pending" | "approved";
+
 export type Chapter = {
   id: string;
   university: string;
@@ -45,6 +47,7 @@ export type Chapter = {
   github: string;
   linkedin: string;
   createdAt: string;
+  status: ChapterStatus; // "pending" until LAIG HQ approves the request
   graduationYear: number | null; // current ambassador's expected graduation
   execs: ExecMember[];
   alumni: Alumnus[]; // past ambassadors who handed over / graduated
@@ -151,11 +154,22 @@ export async function getChapters(): Promise<Chapter[]> {
     alumni: c.alumni ?? [],
     advisers: c.advisers ?? [],
     graduationYear: c.graduationYear ?? null,
+    // Chapters created before the approval flow are treated as approved.
+    status: c.status ?? "approved",
   }));
 }
 
 export async function saveChapters(chapters: Chapter[]): Promise<void> {
   await kvSet("chapters", chapters);
+}
+
+/** Delete a chapter and any events that belong to it. */
+export async function deleteChapter(chapterId: string): Promise<void> {
+  const chapters = await getChapters();
+  await saveChapters(chapters.filter((c) => c.id !== chapterId));
+  const events = await getEvents();
+  const remaining = events.filter((e) => e.chapterId !== chapterId);
+  if (remaining.length !== events.length) await saveEvents(remaining);
 }
 
 /** Find the chapter a person manages, by ambassador email or exec email. */

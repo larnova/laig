@@ -123,6 +123,7 @@ export default function Dashboard({
   ] as (Tab | false | null)[]).filter((t): t is Tab => Boolean(t));
 
   const activeKey = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
+  const isPending = chapter?.status === "pending";
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
@@ -161,38 +162,59 @@ export default function Dashboard({
         </div>
       )}
 
-      {/* Sub-navigation */}
-      <div className="sticky top-16 z-40 -mx-6 mt-6 border-b border-slate-200 bg-white/85 px-6 backdrop-blur">
-        <div className="flex gap-1 overflow-x-auto py-2">
-          {tabs.map((t) => {
-            const Icon = t.icon;
-            const active = t.key === activeKey;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setActiveTab(t.key)}
-                aria-current={active ? "page" : undefined}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
-                  active
-                    ? "bg-violet-100 text-violet-700"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-violet-700"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {t.label}
-              </button>
-            );
-          })}
+      {isPending ? (
+        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+          <div className="flex items-start gap-3">
+            <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Your chapter is awaiting HQ review
+              </h2>
+              <p className="mt-1.5 text-sm text-slate-600">
+                Thanks for starting the {chapter?.university} chapter. LAIG HQ
+                reviews every request before it goes live. Once approved, you can
+                add your executive team, post events, and recruit members — and
+                we&apos;ll let you know. You can close this page in the meantime.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Sub-navigation */}
+          <div className="sticky top-16 z-40 -mx-6 mt-6 border-b border-slate-200 bg-white/85 px-6 backdrop-blur">
+            <div className="flex gap-1 overflow-x-auto py-2">
+              {tabs.map((t) => {
+                const Icon = t.icon;
+                const active = t.key === activeKey;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setActiveTab(t.key)}
+                    aria-current={active ? "page" : undefined}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                      active
+                        ? "bg-violet-100 text-violet-700"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-violet-700"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* Panes (kept mounted to preserve form state across tabs) */}
-      {tabs.map((t) => (
-        <div key={t.key} className={t.key === activeKey ? "" : "hidden"}>
-          {t.node}
-        </div>
-      ))}
+          {/* Panes (kept mounted to preserve form state across tabs) */}
+          {tabs.map((t) => (
+            <div key={t.key} className={t.key === activeKey ? "" : "hidden"}>
+              {t.node}
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -844,15 +866,23 @@ function AlumniSection({ chapter }: { chapter: Chapter }) {
   );
 }
 
-/* ── HQ admin: reassign chapters ─────────────────────────── */
+/* ── HQ admin: review / reassign / delete chapters ───────── */
 function AdminChaptersSection({ chapters }: { chapters: Chapter[] }) {
   const [list, setList] = useState<Chapter[]>(chapters);
+
+  // Pending requests first, then alphabetical.
+  const sorted = [...list].sort((a, b) => {
+    if (a.status !== b.status) return a.status === "pending" ? -1 : 1;
+    return a.university.localeCompare(b.university);
+  });
+  const pendingCount = list.filter((c) => c.status === "pending").length;
+
   if (list.length === 0) {
     return (
       <Section
         icon={<Building2 className="h-5 w-5" />}
         title="All chapters (HQ)"
-        subtitle="Reassign an ambassador if a chapter is left without an active lead."
+        subtitle="Review and approve new chapter requests, reassign ambassadors, or remove a chapter."
       >
         <p className="text-sm text-slate-500">No chapters yet.</p>
       </Section>
@@ -862,10 +892,16 @@ function AdminChaptersSection({ chapters }: { chapters: Chapter[] }) {
     <Section
       icon={<Building2 className="h-5 w-5" />}
       title="All chapters (HQ)"
-      subtitle="Reassign an ambassador if a chapter is left without an active lead — e.g. after a graduate leaves without handing over."
+      subtitle="Review and approve new chapter requests, reassign ambassadors, or remove a chapter."
     >
+      {pendingCount > 0 && (
+        <p className="mb-4 inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800">
+          <Clock className="h-4 w-4" />
+          {pendingCount} request{pendingCount > 1 ? "s" : ""} awaiting review
+        </p>
+      )}
       <div className="space-y-3">
-        {list.map((c) => (
+        {sorted.map((c) => (
           <ChapterAdminRow
             key={c.id}
             chapter={c}
@@ -878,6 +914,12 @@ function AdminChaptersSection({ chapters }: { chapters: Chapter[] }) {
                 )
               )
             }
+            onApproved={() =>
+              setList((prev) =>
+                prev.map((x) => (x.id === c.id ? { ...x, status: "approved" } : x))
+              )
+            }
+            onDeleted={() => setList((prev) => prev.filter((x) => x.id !== c.id))}
           />
         ))}
       </div>
@@ -888,9 +930,13 @@ function AdminChaptersSection({ chapters }: { chapters: Chapter[] }) {
 function ChapterAdminRow({
   chapter,
   onReassigned,
+  onApproved,
+  onDeleted,
 }: {
   chapter: Chapter;
   onReassigned: (name: string, email: string) => void;
+  onApproved: () => void;
+  onDeleted: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [execId, setExecId] = useState("");
@@ -900,6 +946,31 @@ function ChapterAdminRow({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [advisers, setAdvisers] = useState<Adviser[]>(chapter.advisers);
+  const [working, setWorking] = useState<"approve" | "delete" | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const isPending = chapter.status === "pending";
+
+  async function approve() {
+    setWorking("approve");
+    const res = await fetch("/api/admin/approve-chapter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chapterId: chapter.id }),
+    });
+    setWorking(null);
+    if (res.ok) onApproved();
+  }
+
+  async function del() {
+    setWorking("delete");
+    const res = await fetch("/api/admin/delete-chapter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chapterId: chapter.id }),
+    });
+    setWorking(null);
+    if (res.ok) onDeleted();
+  }
 
   async function toggleVerify(a: Adviser) {
     const next = !a.verified;
@@ -936,22 +1007,91 @@ function ChapterAdminRow({
 
   return (
     <div className="rounded-xl border border-slate-200 p-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">{chapter.university}</p>
-          <p className="text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-slate-900">{chapter.university}</p>
+            {isPending ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                <Clock className="h-3 w-3" /> Pending review
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                <BadgeCheck className="h-3 w-3" /> Live
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs text-slate-500">
             {chapter.ambassadorName} · {chapter.ambassadorEmail}
             {chapter.graduationYear ? ` · Class of ${chapter.graduationYear}` : ""}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
-        >
-          {open ? "Cancel" : "Reassign"}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isPending && (
+            <button
+              type="button"
+              onClick={approve}
+              disabled={working !== null}
+              className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-60"
+            >
+              {working === "approve" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              )}
+              Approve
+            </button>
+          )}
+          {!isPending && (
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            >
+              {open ? "Cancel" : "Reassign"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            aria-label={`Delete ${chapter.university}`}
+            className="rounded-lg border border-slate-300 bg-white p-1.5 text-slate-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
+
+      {confirmDelete && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+          <span>
+            Delete <strong>{chapter.university}</strong> and its events? This
+            can&apos;t be undone.
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={del}
+              disabled={working !== null}
+              className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+            >
+              {working === "delete" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              Delete
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {advisers.length > 0 && (
         <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
