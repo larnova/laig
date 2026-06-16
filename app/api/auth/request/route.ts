@@ -7,7 +7,11 @@ export const dynamic = "force-dynamic";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function originFrom(request: Request): string {
-  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, "");
+  // SITE_URL (explicit) → Netlify's built-in primary site URL → request host.
+  // Using process.env.URL avoids deploy-permalink hosts like
+  // https://<deploy-id>--<site>.netlify.app in the magic-link email.
+  const explicit = process.env.SITE_URL || process.env.URL;
+  if (explicit) return explicit.replace(/\/+$/, "");
   const h = request.headers;
   const host = h.get("x-forwarded-host") || h.get("host") || "";
   const isLocal = host.startsWith("localhost") || host.startsWith("127.");
