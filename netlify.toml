@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Netlify auto-installs the Next.js runtime, which provides serverless
+# functions for Route Handlers and the runtime context for Netlify Blobs.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
