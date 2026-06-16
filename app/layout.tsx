@@ -19,7 +19,6 @@ export const metadata: Metadata = {
   title: "Larnova AI Group (LAIG) — Engineering Africa's Foundational AI",
   description:
     "LAIG is Interstellar Innovations' elite, department-backed student research network driving localized data curation and agentic development for Lokolm across Nigerian universities.",
-  icons: { icon: "/logo.png", apple: "/logo.png" },
 };
 
 export default function RootLayout({

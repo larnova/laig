@@ -35,6 +35,15 @@ export default function Reveal({
       return;
     }
 
+    // If it's already in (or above) the viewport at mount — e.g. on reload with
+    // restored scroll, or just below the hero — reveal right away so it never
+    // stays stuck hidden.
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setShown(true);
+      return;
+    }
+
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -42,7 +51,7 @@ export default function Reveal({
           io.disconnect();
         }
       },
-      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.01, rootMargin: "0px 0px -10% 0px" }
     );
     io.observe(el);
     return () => io.disconnect();
