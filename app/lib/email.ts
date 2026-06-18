@@ -66,7 +66,7 @@ export async function sendChapterApproved(
   const html = shell(
     `<h2 style="color:#7c3aed">Your chapter is approved 🎉</h2>
      <p>${hi}</p>
-     <p>Great news — LAIG HQ has approved the <strong>${university}</strong>
+     <p>Great news! LAIG HQ has approved the <strong>${university}</strong>
         chapter. It's now live: members can find and join it, and you can sign in
         to add your executive team, list chapter advisers, and post events.</p>
      ${button(dashboardUrl, "Open my dashboard")}
@@ -76,6 +76,6 @@ export async function sendChapterApproved(
     email,
     `Your ${university} LAIG chapter is approved`,
     html,
-    `Chapter approved — dashboard: ${dashboardUrl}`
+    `Chapter approved - dashboard: ${dashboardUrl}`
   );
 }

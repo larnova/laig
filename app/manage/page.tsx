@@ -8,7 +8,7 @@ import Dashboard from "./Dashboard";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Chapter Dashboard — Larnova AI Group",
+  title: "Chapter Dashboard | Larnova AI Group",
 };
 
 export default async function ManagePage({

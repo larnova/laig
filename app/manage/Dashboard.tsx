@@ -173,7 +173,7 @@ export default function Dashboard({
               <p className="mt-1.5 text-sm text-slate-600">
                 Thanks for starting the {chapter?.university} chapter. LAIG HQ
                 reviews every request before it goes live. Once approved, you can
-                add your executive team, post events, and recruit members — and
+                add your executive team, post events, and recruit members, and
                 we&apos;ll let you know. You can close this page in the meantime.
               </p>
             </div>
@@ -768,7 +768,7 @@ function HandoverSection({ chapter }: { chapter: Chapter }) {
     >
       {chapter.execs.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-          Add an executive team member above first — you can only hand over to
+          Add an executive team member above first. You can only hand over to
           someone already on your team.
         </p>
       ) : !confirming ? (
@@ -785,7 +785,7 @@ function HandoverSection({ chapter }: { chapter: Chapter }) {
               <option value="">Choose a team member…</option>
               {chapter.execs.map((x) => (
                 <option key={x.id} value={x.id}>
-                  {x.name} — {x.role}
+                  {x.name} - {x.role}
                 </option>
               ))}
             </select>
@@ -1192,7 +1192,7 @@ function ChapterAdminRow({
                 onChange={(e) => setExecId(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
-                <option value="">— choose exec —</option>
+                <option value="">Choose executive...</option>
                 {chapter.execs.map((x) => (
                   <option key={x.id} value={x.id}>
                     {x.name} ({x.role})

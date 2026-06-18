@@ -5,7 +5,7 @@ import EventsBoard from "./EventsBoard";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Events — Larnova AI Group",
+  title: "Events | Larnova AI Group",
   description:
     "Workshops, weekly sessions, hackathons and chapter meetups across the LAIG community.",
 };
@@ -27,7 +27,7 @@ export default async function EventsPage() {
             LAIG Events
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-slate-600">
-            Weekly sessions, workshops, hackathons and chapter meetups — across
+            Weekly sessions, workshops, hackathons and chapter meetups across
             the whole community and at universities near you.
           </p>
         </div>

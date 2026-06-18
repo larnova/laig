@@ -143,7 +143,7 @@ export default function ApplicationForm() {
       if (!values.motivation.trim()) {
         next.motivation = "Share a brief motivation statement.";
       } else if (values.motivation.trim().length < 40) {
-        next.motivation = "Give us a little more — at least 40 characters.";
+        next.motivation = "Give us a little more: at least 40 characters.";
       }
     } else {
       if (!values.chapterId) next.chapterId = "Select the chapter you want to join.";
@@ -215,7 +215,7 @@ export default function ApplicationForm() {
         <p className="mx-auto mt-3 max-w-md text-slate-600">
           Thanks, {values.fullName.split(" ")[0] || "there"}.{" "}
           {isAmbassador
-            ? `Your request to start the ${values.university} chapter is in. LAIG HQ reviews every chapter before it goes live — once approved you can sign in and set it up.`
+            ? `Your request to start the ${values.university} chapter is in. LAIG HQ reviews every chapter before it goes live. Once approved, you can sign in and set it up.`
             : "Your chapter membership application is in."}{" "}
           Keep an eye on <span className="font-medium text-slate-900">{values.email}</span>.
         </p>
@@ -249,7 +249,7 @@ export default function ApplicationForm() {
 
       <p className="mt-4 text-sm text-slate-600">
         {isAmbassador
-          ? "Found and lead the chapter at your university. Each university has exactly one Campus Ambassador — you'll drive recruitment, run workshops, and earn first consideration for the Lokolm Research Fellowship."
+          ? "Found and lead the chapter at your university. Each university has exactly one Campus Ambassador. You'll drive recruitment, run workshops, and earn first consideration for the Lokolm Research Fellowship."
           : "Join the active LAIG chapter at your university to access workshops, compute credits, and the talent pipeline."}
       </p>
 
@@ -330,7 +330,7 @@ export default function ApplicationForm() {
               <div className="text-sm">
                 <p className="font-semibold text-slate-900">
                   {noChapters
-                    ? "No chapters exist yet — be the first!"
+                    ? "No chapters exist yet. Be the first!"
                     : "Don't see your university?"}
                 </p>
                 <p className="mt-0.5 text-slate-600">

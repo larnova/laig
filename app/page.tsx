@@ -31,7 +31,7 @@ const pillars = [
     tag: "Data Engineering",
     icon: Database,
     title: "Train a model that speaks like home",
-    body: "Pidgin, Yoruba, Hausa, Igbo, regional business logic — the nuances global models miss. Members curate and validate high-fidelity localized tokens that feed straight into Lokolm's training pipeline. No membership required to contribute.",
+    body: "Pidgin, Yoruba, Hausa, Igbo, regional business logic: the nuances global models miss. Members curate and validate high-fidelity localized tokens that feed straight into Lokolm's training pipeline. No membership required to contribute.",
     img: photos.gallery2,
     alt: "A team reviewing AI training data together",
     link: {
@@ -43,7 +43,7 @@ const pillars = [
     tag: "Agentic Benchmarking",
     icon: Cpu,
     title: "Push open models to their limits",
-    body: "Members build advanced multi-agent workflows on top of open-source architectures and stress-test them against real-world African scenarios — surfacing exactly where today's models break.",
+    body: "Members build advanced multi-agent workflows on top of open-source architectures and stress-test them against real-world African scenarios, surfacing exactly where today's models break.",
     img: photos.gallery1,
     alt: "Students building and testing AI systems together",
     link: null,
@@ -52,7 +52,7 @@ const pillars = [
     tag: "Advanced Workshops",
     icon: Video,
     title: "Go deep, live, every single week",
-    body: "We move past basic web development into real machine learning — hands-on, on Google Meet, every week. You build alongside engineers shipping real model work instead of watching from the sidelines.",
+    body: "We move past basic web development into real machine learning, with hands-on sessions on Google Meet every week. You build alongside engineers shipping real model work instead of watching from the sidelines.",
     img: photos.gallery3,
     alt: "Students in a lively workshop session",
     link: {
@@ -81,7 +81,7 @@ const benefits = [
   {
     icon: GraduationCap,
     title: "Academic Backing",
-    body: "Run in direct partnership with university departments across disciplines — from computer science and engineering to linguistics, the sciences, and beyond — providing credible final-year project alignment for every member.",
+    body: "Run in direct partnership with university departments across disciplines, from computer science and engineering to linguistics, the sciences, and beyond, providing credible final-year project alignment for every member.",
   },
 ];
 
@@ -166,7 +166,7 @@ export default function Home() {
           <SectionHeading
             eyebrow="What we do"
             title="The Work We Do Together"
-            subtitle="Three pillars drive the LAIG research network — and your work feeds directly into Lokolm."
+            subtitle="Three pillars drive the LAIG research network, and your work feeds directly into Lokolm."
           />
           <div className="mt-16 space-y-20 lg:space-y-28">
             {pillars.map((p, i) => {
@@ -227,7 +227,7 @@ export default function Home() {
             <SectionHeading
               eyebrow="The curriculum"
               title="What We Dig Into"
-              subtitle="The topics and tools members explore together — from first principles to shipping real systems."
+              subtitle="The topics and tools members explore together, from first principles to shipping real systems."
             />
           </div>
           <div className="mt-12">

@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   if (!isGlobal) {
     if (!mgr.chapter)
       return Response.json(
-        { ok: false, error: "You don't manage a chapter — post an org-wide event instead." },
+        { ok: false, error: "You don't manage a chapter. Post an org-wide event instead." },
         { status: 400 }
       );
     chapterId = mgr.chapter.id;

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Larnova AI Group (LAIG) — Engineering Africa's Foundational AI",
+  title: "Larnova AI Group (LAIG) | Engineering Africa's Foundational AI",
   description:
     "LAIG is Interstellar Innovations' elite, department-backed student research network driving localized data curation and agentic development for Lokolm across Nigerian universities.",
 };

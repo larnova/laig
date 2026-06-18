@@ -60,7 +60,7 @@ export default function EventsBoard({ events }: { events: LaigEvent[] }) {
           No upcoming events yet
         </h3>
         <p className="mx-auto mt-1.5 max-w-sm text-sm text-slate-500">
-          Chapters and LAIG HQ post events here. Check back soon — or join a
+          Chapters and LAIG HQ post events here. Check back soon, or join a
           chapter to get them in your inbox.
         </p>
       </div>
@@ -132,7 +132,7 @@ export default function EventsBoard({ events }: { events: LaigEvent[] }) {
                 {e.chapterId === null ? (
                   <>
                     <Globe className="h-4 w-4 text-violet-500" />
-                    LAIG HQ — org-wide
+                    LAIG HQ - org-wide
                   </>
                 ) : (
                   <>

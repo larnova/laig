@@ -153,7 +153,7 @@ async function handleMember(body: Payload, fullName: string, email: string) {
   // load and submit.
   if (!chapter || chapter.status !== "approved") {
     return fail(
-      "That chapter is no longer available. There may be no chapter at your university yet — consider becoming a Campus Ambassador.",
+      "That chapter is no longer available. There may be no chapter at your university yet. Consider becoming a Campus Ambassador.",
       "chapter_missing",
       409
     );
