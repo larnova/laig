@@ -88,9 +88,9 @@ async function handleAmbassador(
   const gradYear = Number(body.graduationYear);
 
   if (!university) return fail("University is required.", "university");
-  if (!/github\.com\//i.test(github))
+  if (github && !/github\.com\//i.test(github))
     return fail("A valid GitHub profile URL is required.", "github");
-  if (!/linkedin\.com\//i.test(linkedin))
+  if (linkedin && !/linkedin\.com\//i.test(linkedin))
     return fail("A valid LinkedIn profile URL is required.", "linkedin");
   if (motivation.length < 40)
     return fail("Please share a longer motivation statement.", "motivation");

@@ -66,5 +66,5 @@ export async function POST(request: Request) {
 
   await saveChapters(chapters);
 
-  return Response.json({ ok: true, ambassador: { name, email } });
+  return Response.json({ ok: true, chapter });
 }

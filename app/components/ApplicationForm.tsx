@@ -130,14 +130,10 @@ export default function ApplicationForm() {
       if (!values.graduationYear) {
         next.graduationYear = "Select your expected graduation year.";
       }
-      if (!values.github.trim()) {
-        next.github = "A GitHub profile is required for ambassadors.";
-      } else if (!/github\.com\//i.test(values.github.trim())) {
+      if (values.github.trim() && !/github\.com\//i.test(values.github.trim())) {
         next.github = "Enter a full github.com profile URL.";
       }
-      if (!values.linkedin.trim()) {
-        next.linkedin = "A LinkedIn profile is required for ambassadors.";
-      } else if (!/linkedin\.com\//i.test(values.linkedin.trim())) {
+      if (values.linkedin.trim() && !/linkedin\.com\//i.test(values.linkedin.trim())) {
         next.linkedin = "Enter a full linkedin.com profile URL.";
       }
       if (!values.motivation.trim()) {
@@ -434,7 +430,7 @@ export default function ApplicationForm() {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Field
-                label="GitHub profile"
+                label="GitHub profile (optional)"
                 error={errors.github}
                 icon={<Code2 className="h-4 w-4" />}
                 id="github"
@@ -451,7 +447,7 @@ export default function ApplicationForm() {
               </Field>
 
               <Field
-                label="LinkedIn profile"
+                label="LinkedIn profile (optional)"
                 error={errors.linkedin}
                 icon={<Briefcase className="h-4 w-4" />}
                 id="linkedin"

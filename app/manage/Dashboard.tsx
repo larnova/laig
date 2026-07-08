@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Loader2,
   LogOut,
@@ -22,6 +22,7 @@ import {
   BookOpen,
   BadgeCheck,
   Clock,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import type { Chapter, ExecMember, LaigEvent, Adviser } from "../lib/store";
@@ -869,6 +870,10 @@ function AlumniSection({ chapter }: { chapter: Chapter }) {
 /* ── HQ admin: review / reassign / delete chapters ───────── */
 function AdminChaptersSection({ chapters }: { chapters: Chapter[] }) {
   const [list, setList] = useState<Chapter[]>(chapters);
+  const [isOpen, setIsOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ university: "", ambassadorName: "", ambassadorEmail: "", github: "", linkedin: "" });
+  const [error, setError] = useState<string | null>(null);
 
   // Pending requests first, then alphabetical.
   const sorted = [...list].sort((a, b) => {
@@ -877,22 +882,45 @@ function AdminChaptersSection({ chapters }: { chapters: Chapter[] }) {
   });
   const pendingCount = list.filter((c) => c.status === "pending").length;
 
-  if (list.length === 0) {
-    return (
-      <Section
-        icon={<Building2 className="h-5 w-5" />}
-        title="All chapters (HQ)"
-        subtitle="Review and approve new chapter requests, reassign ambassadors, or remove a chapter."
-      >
-        <p className="text-sm text-slate-500">No chapters yet.</p>
-      </Section>
-    );
+  async function createChapter(e: React.FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    setError(null);
+    const res = await fetch("/api/admin/create-chapter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const data = await res.json();
+    setCreating(false);
+    if (!res.ok || !data.ok) {
+      setError(data.error || "Could not create chapter.");
+      return;
+    }
+    setList((prev) => [...prev, data.chapter]);
+    setForm({ university: "", ambassadorName: "", ambassadorEmail: "", github: "", linkedin: "" });
+    setIsOpen(false);
   }
+
   return (
     <Section
       icon={<Building2 className="h-5 w-5" />}
       title="All chapters (HQ)"
-      subtitle="Review and approve new chapter requests, reassign ambassadors, or remove a chapter."
+      subtitle="Manage student chapters and ambassadors."
+      action={
+        <button
+          type="button"
+          onClick={() => {
+            setIsOpen(true);
+            setError(null);
+          }}
+          title="Create Chapter"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 p-2 sm:px-4 sm:py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-700 cursor-pointer"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Create Chapter</span>
+        </button>
+      }
     >
       {pendingCount > 0 && (
         <p className="mb-4 inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800">
@@ -900,57 +928,133 @@ function AdminChaptersSection({ chapters }: { chapters: Chapter[] }) {
           {pendingCount} request{pendingCount > 1 ? "s" : ""} awaiting review
         </p>
       )}
-      <div className="space-y-3">
-        {sorted.map((c) => (
-          <ChapterAdminRow
-            key={c.id}
-            chapter={c}
-            onReassigned={(name, emailAddr) =>
-              setList((prev) =>
-                prev.map((x) =>
-                  x.id === c.id
-                    ? { ...x, ambassadorName: name, ambassadorEmail: emailAddr }
-                    : x
+
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl relative animate-scale-up">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="absolute top-4 right-4 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="mb-1 text-lg font-bold text-slate-900">Directly Create Chapter</h3>
+            <p className="mb-4 text-xs text-slate-500">Create an approved student chapter instantly.</p>
+            
+            <form onSubmit={createChapter} className="space-y-4">
+              <Input label="University" value={form.university} onChange={(v) => setForm({ ...form, university: v })} placeholder="University of Lagos" />
+              <Input label="Ambassador Name" value={form.ambassadorName} onChange={(v) => setForm({ ...form, ambassadorName: v })} placeholder="Ada Lovelace" />
+              <Input label="Ambassador Email" type="email" value={form.ambassadorEmail} onChange={(v) => setForm({ ...form, ambassadorEmail: v })} placeholder="ada@unilag.edu.ng" />
+              <Input label="GitHub Profile URL (optional)" value={form.github} onChange={(v) => setForm({ ...form, github: v })} placeholder="https://github.com/username" />
+              <Input label="LinkedIn Profile URL (optional)" value={form.linkedin} onChange={(v) => setForm({ ...form, linkedin: v })} placeholder="https://linkedin.com/in/username" />
+              
+              {error && (
+                <p className="flex items-center gap-1.5 text-xs text-red-600">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {error}
+                </p>
+              )}
+
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-60 cursor-pointer"
+                >
+                  {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Create Approved Chapter
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {list.length === 0 ? (
+        <p className="text-sm text-slate-500">No chapters yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {sorted.map((c) => (
+            <ChapterAdminRow
+              key={c.id}
+              chapter={c}
+              onUpdated={(updatedChapter) =>
+                setList((prev) =>
+                  prev.map((x) => (x.id === updatedChapter.id ? updatedChapter : x))
                 )
-              )
-            }
-            onApproved={() =>
-              setList((prev) =>
-                prev.map((x) => (x.id === c.id ? { ...x, status: "approved" } : x))
-              )
-            }
-            onDeleted={() => setList((prev) => prev.filter((x) => x.id !== c.id))}
-          />
-        ))}
-      </div>
+              }
+              onApproved={() =>
+                setList((prev) =>
+                  prev.map((x) => (x.id === c.id ? { ...x, status: "approved" } : x))
+                )
+              }
+              onDeleted={() => setList((prev) => prev.filter((x) => x.id !== c.id))}
+            />
+          ))}
+        </div>
+      )}
     </Section>
   );
 }
 
 function ChapterAdminRow({
   chapter,
-  onReassigned,
+  onUpdated,
   onApproved,
   onDeleted,
 }: {
   chapter: Chapter;
-  onReassigned: (name: string, email: string) => void;
+  onUpdated: (chapter: Chapter) => void;
   onApproved: () => void;
   onDeleted: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [execId, setExecId] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    ambassadorName: chapter.ambassadorName,
+    ambassadorEmail: chapter.ambassadorEmail,
+    github: chapter.github || "",
+    linkedin: chapter.linkedin || "",
+    graduationYear: chapter.graduationYear ? String(chapter.graduationYear) : "",
+  });
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editDone, setEditDone] = useState(false);
+
   const [advisers, setAdvisers] = useState<Adviser[]>(chapter.advisers);
   const [working, setWorking] = useState<"approve" | "delete" | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isPending = chapter.status === "pending";
   // Pending applications start expanded so HQ sees the motivation immediately.
   const [showApp, setShowApp] = useState(isPending);
+
+  // Sync state if chapter prop changes
+  useEffect(() => {
+    setEditForm({
+      ambassadorName: chapter.ambassadorName,
+      ambassadorEmail: chapter.ambassadorEmail,
+      github: chapter.github || "",
+      linkedin: chapter.linkedin || "",
+      graduationYear: chapter.graduationYear ? String(chapter.graduationYear) : "",
+    });
+  }, [chapter]);
 
   async function approve() {
     setWorking("approve");
@@ -1002,14 +1106,42 @@ function ChapterAdminRow({
       setError(data.error || "Could not reassign.");
       return;
     }
-    onReassigned(data.ambassador.name, data.ambassador.email);
+    onUpdated(data.chapter);
     setDone(true);
     setOpen(false);
   }
 
+  async function editAmbassador(e: React.FormEvent) {
+    e.preventDefault();
+    setEditBusy(true);
+    setEditError(null);
+    setEditDone(false);
+    const res = await fetch("/api/admin/edit-ambassador", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chapterId: chapter.id,
+        ambassadorName: editForm.ambassadorName,
+        ambassadorEmail: editForm.ambassadorEmail,
+        github: editForm.github,
+        linkedin: editForm.linkedin,
+        graduationYear: editForm.graduationYear ? Number(editForm.graduationYear) : null,
+      }),
+    });
+    const data = await res.json();
+    setEditBusy(false);
+    if (!res.ok || !data.ok) {
+      setEditError(data.error || "Could not update ambassador info.");
+      return;
+    }
+    onUpdated(data.chapter);
+    setEditDone(true);
+    setEditOpen(false);
+  }
+
   return (
     <div className="rounded-xl border border-slate-200 p-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-slate-900">{chapter.university}</p>
@@ -1027,13 +1159,38 @@ function ChapterAdminRow({
             {chapter.ambassadorName} · {chapter.ambassadorEmail}
             {chapter.graduationYear ? ` · Class of ${chapter.graduationYear}` : ""}
           </p>
+          {(chapter.github || chapter.linkedin) && (
+            <div className="mt-1 flex gap-2 text-xs">
+              {chapter.github && (
+                <a
+                  href={chapter.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-violet-700 hover:underline"
+                >
+                  GitHub ↗
+                </a>
+              )}
+              {chapter.github && chapter.linkedin && <span className="text-slate-300">·</span>}
+              {chapter.linkedin && (
+                <a
+                  href={chapter.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-violet-700 hover:underline"
+                >
+                  LinkedIn ↗
+                </a>
+              )}
+            </div>
+          )}
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0">
           {chapter.motivation && (
             <button
               type="button"
               onClick={() => setShowApp((o) => !o)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
             >
               {showApp ? "Hide" : "Application"}
             </button>
@@ -1054,19 +1211,44 @@ function ChapterAdminRow({
             </button>
           )}
           {!isPending && (
-            <button
-              type="button"
-              onClick={() => setOpen((o) => !o)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
-            >
-              {open ? "Cancel" : "Reassign"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditOpen((o) => !o);
+                  setOpen(false);
+                  setEditError(null);
+                }}
+                title={editOpen ? "Cancel Edit" : "Edit Info"}
+                className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                {editOpen ? <X className="h-3.5 w-3.5" /> : <UserCog className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">
+                  {editOpen ? "Cancel Edit" : "Edit Info"}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen((o) => !o);
+                  setEditOpen(false);
+                  setError(null);
+                }}
+                title={open ? "Cancel Reassign" : "Reassign"}
+                className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                {open ? <X className="h-3.5 w-3.5" /> : <Repeat2 className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">
+                  {open ? "Cancel" : "Reassign"}
+                </span>
+              </button>
+            </>
           )}
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
             aria-label={`Delete ${chapter.university}`}
-            className="rounded-lg border border-slate-300 bg-white p-1.5 text-slate-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+            className="rounded-lg border border-slate-300 bg-white p-1.5 text-slate-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 cursor-pointer"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -1081,30 +1263,6 @@ function ChapterAdminRow({
           <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-slate-700">
             {chapter.motivation}
           </p>
-          {(chapter.github || chapter.linkedin) && (
-            <div className="mt-3 flex flex-wrap gap-3 text-xs">
-              {chapter.github && (
-                <a
-                  href={chapter.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-violet-700 hover:underline"
-                >
-                  GitHub ↗
-                </a>
-              )}
-              {chapter.linkedin && (
-                <a
-                  href={chapter.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-violet-700 hover:underline"
-                >
-                  LinkedIn ↗
-                </a>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -1119,7 +1277,7 @@ function ChapterAdminRow({
               type="button"
               onClick={del}
               disabled={working !== null}
-              className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60 cursor-pointer"
             >
               {working === "delete" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1131,7 +1289,7 @@ function ChapterAdminRow({
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
             >
               Cancel
             </button>
@@ -1178,6 +1336,72 @@ function ChapterAdminRow({
         <p className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600">
           <CheckCircle2 className="h-3.5 w-3.5" /> Ambassador reassigned.
         </p>
+      )}
+
+      {editDone && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600">
+          <CheckCircle2 className="h-3.5 w-3.5" /> Ambassador details saved.
+        </p>
+      )}
+
+      {editOpen && (
+        <form onSubmit={editAmbassador} className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Edit Ambassador Info</h4>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              value={editForm.ambassadorName}
+              onChange={(e) => setEditForm({ ...editForm, ambassadorName: e.target.value })}
+              placeholder="Ambassador Name"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none"
+            />
+            <input
+              type="email"
+              value={editForm.ambassadorEmail}
+              onChange={(e) => setEditForm({ ...editForm, ambassadorEmail: e.target.value })}
+              placeholder="Ambassador Email"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none"
+            />
+            <input
+              value={editForm.github}
+              onChange={(e) => setEditForm({ ...editForm, github: e.target.value })}
+              placeholder="GitHub Profile URL (optional)"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none"
+            />
+            <input
+              value={editForm.linkedin}
+              onChange={(e) => setEditForm({ ...editForm, linkedin: e.target.value })}
+              placeholder="LinkedIn Profile URL (optional)"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Expected Graduation Year</label>
+            <select
+              value={editForm.graduationYear}
+              onChange={(e) => setEditForm({ ...editForm, graduationYear: e.target.value })}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none"
+            >
+              <option value="">Not set</option>
+              {GRAD_YEARS.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          {editError && (
+            <p className="flex items-center gap-1.5 text-xs text-red-600">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {editError}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={editBusy}
+            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-60 cursor-pointer"
+          >
+            {editBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+            Save Details
+          </button>
+        </form>
       )}
 
       {open && (
@@ -1227,7 +1451,7 @@ function ChapterAdminRow({
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-60 cursor-pointer"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
             Make ambassador
@@ -1243,23 +1467,28 @@ function Section({
   icon,
   title,
   subtitle,
+  action,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="mb-5 flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
-          {icon}
+      <div className="mb-5 flex justify-between gap-4 items-start">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            {icon}
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+          </div>
         </div>
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
-        </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       {children}
     </section>
