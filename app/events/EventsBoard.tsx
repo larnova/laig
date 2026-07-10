@@ -8,12 +8,13 @@ import {
   Building2,
   ArrowUpRight,
   Star,
+  Repeat2,
 } from "lucide-react";
 import type { LaigEvent } from "../lib/store";
+import { nextOccurrence } from "../lib/recurrence";
 
-function formatWhen(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
+function formatWhen(when: string | Date): string {
+  return new Date(when).toLocaleString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -28,17 +29,23 @@ const modeStyles: Record<LaigEvent["mode"], string> = {
   hybrid: "bg-amber-100 text-amber-700",
 };
 
+type Occurrence = { event: LaigEvent; occursAt: Date };
+
 export default function EventsBoard({ events }: { events: LaigEvent[] }) {
   const [chapter, setChapter] = useState<string>("all");
 
   const now = Date.now();
-  const upcoming = useMemo(
-    () =>
-      events
-        .filter((e) => new Date(e.startsAt).getTime() >= now - 12 * 3600 * 1000)
-        .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
-    [events, now]
-  );
+  const upcoming = useMemo(() => {
+    // One card per event — a recurring event shows its next occurrence
+    // instead of every future week.
+    const from = new Date(now - 12 * 3600 * 1000);
+    const occurrences: Occurrence[] = [];
+    for (const event of events) {
+      const occursAt = nextOccurrence(event, from);
+      if (occursAt) occurrences.push({ event, occursAt });
+    }
+    return occurrences.sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
+  }, [events, now]);
 
   const chapterNames = useMemo(() => {
     const set = new Set<string>();
@@ -46,10 +53,10 @@ export default function EventsBoard({ events }: { events: LaigEvent[] }) {
     return Array.from(set).sort();
   }, [events]);
 
-  const filtered = upcoming.filter((e) => {
+  const filtered = upcoming.filter(({ event }) => {
     if (chapter === "all") return true;
-    if (chapter === "hq") return e.chapterId === null;
-    return e.chapterName === chapter;
+    if (chapter === "hq") return event.chapterId === null;
+    return event.chapterName === chapter;
   });
 
   if (upcoming.length === 0) {
@@ -89,7 +96,7 @@ export default function EventsBoard({ events }: { events: LaigEvent[] }) {
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        {filtered.map((e) => (
+        {filtered.map(({ event: e, occursAt }) => (
           <article
             key={e.id}
             className={`flex flex-col rounded-2xl border bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
@@ -108,6 +115,12 @@ export default function EventsBoard({ events }: { events: LaigEvent[] }) {
                   Featured
                 </span>
               )}
+              {e.recurrence === "weekly" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                  <Repeat2 className="h-3 w-3" />
+                  Weekly
+                </span>
+              )}
             </div>
 
             <h3 className="mt-3 text-lg font-bold text-slate-900">{e.title}</h3>
@@ -120,7 +133,7 @@ export default function EventsBoard({ events }: { events: LaigEvent[] }) {
             <dl className="mt-4 space-y-1.5 text-sm text-slate-600">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-violet-500" />
-                {formatWhen(e.startsAt)}
+                {formatWhen(occursAt)}
               </div>
               {e.location && (
                 <div className="flex items-center gap-2">

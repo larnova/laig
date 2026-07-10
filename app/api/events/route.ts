@@ -25,6 +25,12 @@ export async function POST(request: Request) {
   const link = str(body.link);
   const mode = MODES.includes(body.mode) ? body.mode : "online";
   const scope = str(body.scope) === "global" ? "global" : "chapter";
+  const recurrence = body.recurrence === "weekly" ? "weekly" : "none";
+  const recurrenceEndRaw = str(body.recurrenceEnd);
+  const recurrenceEnd =
+    recurrence === "weekly" && recurrenceEndRaw && !Number.isNaN(Date.parse(recurrenceEndRaw))
+      ? new Date(recurrenceEndRaw).toISOString()
+      : null;
 
   if (!title) return Response.json({ ok: false, error: "Title is required." }, { status: 400 });
   if (!startsAt || Number.isNaN(Date.parse(startsAt)))
@@ -64,6 +70,9 @@ export async function POST(request: Request) {
     featured: isGlobal,
     createdByEmail: mgr.email,
     createdAt: new Date().toISOString(),
+    seriesId: null,
+    recurrence,
+    recurrenceEnd,
   };
 
   const events = await getEvents();
@@ -77,7 +86,9 @@ export async function DELETE(request: Request) {
   const mgr = await getManager();
   if (!mgr) return Response.json({ ok: false, error: "Not authorized." }, { status: 401 });
 
-  const id = str(new URL(request.url).searchParams.get("id") || "");
+  const url = new URL(request.url);
+  const id = str(url.searchParams.get("id") || "");
+  const wholeSeries = url.searchParams.get("series") === "true";
   if (!id) return Response.json({ ok: false, error: "Missing event id." }, { status: 400 });
 
   const events = await getEvents();
@@ -88,6 +99,18 @@ export async function DELETE(request: Request) {
   if (!mgr.isAdmin && !ownsChapterEvent)
     return Response.json({ ok: false, error: "You can't remove this event." }, { status: 403 });
 
-  await saveEvents(events.filter((e) => e.id !== id));
-  return Response.json({ ok: true });
+  // "Delete whole series" removes this occurrence and every future one that
+  // shares its seriesId, leaving past occurrences (and their reminder
+  // history) untouched.
+  const removeIds =
+    wholeSeries && event.seriesId
+      ? new Set(
+          events
+            .filter((e) => e.seriesId === event.seriesId && e.startsAt >= event.startsAt)
+            .map((e) => e.id)
+        )
+      : new Set([id]);
+
+  await saveEvents(events.filter((e) => !removeIds.has(e.id)));
+  return Response.json({ ok: true, removed: removeIds.size });
 }

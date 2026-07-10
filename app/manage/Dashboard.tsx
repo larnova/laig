@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Chapter, ExecMember, LaigEvent, Adviser } from "../lib/store";
+import { nextOccurrence } from "../lib/recurrence";
 
 const GRAD_YEARS = Array.from({ length: 7 }, (_, i) => 2026 + i);
 
@@ -38,8 +39,8 @@ const ROLES = [
   "Secretary",
 ];
 
-function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
+function formatWhen(when: string | Date) {
+  return new Date(when).toLocaleString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -439,6 +440,8 @@ function EventsSection({
     mode: "online",
     link: "",
     scope: hasChapter ? "chapter" : "global",
+    recurrence: "none",
+    recurrenceEnd: "",
   });
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -469,13 +472,22 @@ function EventsSection({
       mode: "online",
       link: "",
       scope: hasChapter ? "chapter" : "global",
+      recurrence: "none",
+      recurrenceEnd: "",
     });
   }
 
-  async function remove(id: string) {
+  async function remove(id: string, series: boolean) {
     const prev = events;
-    setEvents((x) => x.filter((e) => e.id !== id));
-    const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+    const event = events.find((e) => e.id === id);
+    setEvents((x) =>
+      series && event?.seriesId
+        ? x.filter((e) => !(e.seriesId === event.seriesId && e.startsAt >= event.startsAt))
+        : x.filter((e) => e.id !== id)
+    );
+    const res = await fetch(`/api/events?id=${id}${series ? "&series=true" : ""}`, {
+      method: "DELETE",
+    });
     if (!res.ok) setEvents(prev);
   }
 
@@ -493,39 +505,61 @@ function EventsSection({
     >
       {events.length > 0 && (
         <ul className="mb-6 space-y-2.5">
-          {events.map((e) => (
-            <li
-              key={e.id}
-              className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-900">{e.title}</p>
-                  {e.chapterId === null ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
-                      <Globe className="h-3 w-3" /> Org-wide
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-                      <Building2 className="h-3 w-3" /> Chapter
-                    </span>
-                  )}
-                </div>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {formatWhen(e.startsAt)}
-                  {e.location ? ` · ${e.location}` : ""} · {e.mode}
-                </p>
-              </div>
-              <button
-                onClick={() => remove(e.id)}
-                aria-label={`Delete ${e.title}`}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+          {events.map((e) => {
+            const isWeekly = e.recurrence === "weekly";
+            const occursAt = isWeekly ? nextOccurrence(e) : new Date(e.startsAt);
+            return (
+              <li
+                key={e.id}
+                className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3"
               >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-900">{e.title}</p>
+                    {e.chapterId === null ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                        <Globe className="h-3 w-3" /> Org-wide
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                        <Building2 className="h-3 w-3" /> Chapter
+                      </span>
+                    )}
+                    {(isWeekly || e.seriesId) && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                        <Repeat2 className="h-3 w-3" /> Weekly
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {occursAt ? `Next: ${formatWhen(occursAt)}` : "Series ended"}
+                    {e.location ? ` · ${e.location}` : ""} · {e.mode}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {e.seriesId && (
+                    <button
+                      onClick={() => remove(e.id, true)}
+                      className="rounded-lg px-2 py-1.5 text-[11px] font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                    >
+                      Cancel series
+                    </button>
+                  )}
+                  <button
+                    onClick={() => remove(e.id, false)}
+                    aria-label={
+                      isWeekly ? `Delete ${e.title} and all future occurrences` : `Delete ${e.title}`
+                    }
+                    title={isWeekly ? "Deletes this and all future occurrences" : undefined}
+                    className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -604,6 +638,38 @@ function EventsSection({
             </select>
           </div>
         )}
+
+        <div className="rounded-xl border border-slate-200 p-3.5">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={form.recurrence === "weekly"}
+              onChange={(e) =>
+                setForm({ ...form, recurrence: e.target.checked ? "weekly" : "none" })
+              }
+              className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+            />
+            <Repeat2 className="h-4 w-4 text-violet-500" />
+            Repeats weekly
+          </label>
+          {form.recurrence === "weekly" && (
+            <div className="mt-3 flex items-center gap-2">
+              <label htmlFor="recurrenceEnd" className="text-xs text-slate-500">
+                Until (optional)
+              </label>
+              <input
+                id="recurrenceEnd"
+                type="date"
+                value={form.recurrenceEnd}
+                onChange={(e) => setForm({ ...form, recurrenceEnd: e.target.value })}
+                className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              />
+              <span className="text-xs text-slate-500">
+                same day &amp; time every week. Leave blank to repeat indefinitely.
+              </span>
+            </div>
+          )}
+        </div>
 
         {error && (
           <p className="flex items-center gap-1.5 text-xs text-red-600">

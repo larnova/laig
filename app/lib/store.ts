@@ -1,6 +1,9 @@
 import { getStore, type Store } from "@netlify/blobs";
 import { promises as fs } from "fs";
 import path from "path";
+import { nextOccurrence } from "./recurrence";
+
+export { nextOccurrence };
 
 /**
  * Netlify Blobs is the source of truth in production. When the app runs on
@@ -70,7 +73,7 @@ export type LaigEvent = {
   id: string;
   title: string;
   description: string;
-  startsAt: string; // ISO datetime
+  startsAt: string; // ISO datetime — the anchor/first occurrence
   location: string;
   mode: "online" | "in-person" | "hybrid";
   link: string;
@@ -79,6 +82,12 @@ export type LaigEvent = {
   featured: boolean;
   createdByEmail: string;
   createdAt: string;
+  /** @deprecated legacy: grouped pre-generated batches from an earlier
+   *  "repeats weekly" implementation that duplicated N rows up front.
+   *  Kept only so old batches remain bulk-deletable; new events don't set it. */
+  seriesId: string | null;
+  recurrence: "none" | "weekly";
+  recurrenceEnd: string | null; // ISO date; null = repeats indefinitely
 };
 
 export type MagicToken = { email: string; expiresAt: number };
@@ -212,24 +221,45 @@ export async function getAllChapterContacts(): Promise<{ email: string; name: st
   return Array.from(seen, ([email, name]) => ({ email, name }));
 }
 
-/** The org-wide "meetup" event scheduled for today (Africa/Lagos calendar date), if any. */
-export async function getTodaysGlobalMeetup(): Promise<LaigEvent | null> {
+/**
+ * The org-wide "meetup" event whose next occurrence falls today (Africa/Lagos
+ * calendar date). Works for one-off events and for weekly recurring ones —
+ * a recurring event has exactly one stored record, so this computes today's
+ * occurrence rather than matching a literal stored startsAt.
+ */
+export async function getTodaysGlobalMeetup(): Promise<{ event: LaigEvent; occursAt: Date } | null> {
   const events = await getEvents();
   const dateFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" });
   const today = dateFormatter.format(new Date());
+  // Look back a day so an event that started a few hours ago (before this
+  // function runs) still resolves to "today's" occurrence, not next week's.
+  const lookback = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const candidates = events
     .filter((e) => e.chapterId === null)
     .filter((e) => e.title.toLowerCase().includes("meetup"))
-    .filter((e) => dateFormatter.format(new Date(e.startsAt)) === today);
+    .map((event) => {
+      const occursAt = nextOccurrence(event, lookback);
+      return occursAt ? { event, occursAt } : null;
+    })
+    .filter((x): x is { event: LaigEvent; occursAt: Date } => x !== null)
+    .filter((x) => dateFormatter.format(x.occursAt) === today);
 
-  candidates.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  candidates.sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
   return candidates[0] ?? null;
 }
 
 // Events
 export async function getEvents(): Promise<LaigEvent[]> {
-  return kvGet<LaigEvent[]>("events", []);
+  const events = await kvGet<LaigEvent[]>("events", []);
+  // Back-compat: events created before recurrence support have no seriesId
+  // (legacy field) or recurrence/recurrenceEnd (new fields).
+  return events.map((e) => ({
+    ...e,
+    seriesId: e.seriesId ?? null,
+    recurrence: e.recurrence ?? "none",
+    recurrenceEnd: e.recurrenceEnd ?? null,
+  }));
 }
 
 export async function saveEvents(events: LaigEvent[]): Promise<void> {

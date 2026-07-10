@@ -11,7 +11,7 @@ export const SESSION_COOKIE = "laig_session";
 /** Admins can post org-wide / featured events. */
 export function isAdmin(email: string): boolean {
   const e = normalizeEmail(email);
-  const allow = (process.env.LAIG_ADMIN_EMAILS || "admin@runbeta.io")
+  const allow = (process.env.LAIG_ADMIN_EMAILS || "admin@larnova.co")
     .split(",")
     .map((x) => x.trim().toLowerCase())
     .filter(Boolean);

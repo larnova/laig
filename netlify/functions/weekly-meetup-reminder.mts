@@ -7,11 +7,12 @@ import { sendWeeklyMeetupReminders } from "../../app/lib/email";
 // today via the events dashboard, and skips sending if none is found so a
 // missed weekly posting doesn't blast a stale or empty reminder.
 const handler = async () => {
-  const event = await getTodaysGlobalMeetup();
-  if (!event) {
+  const match = await getTodaysGlobalMeetup();
+  if (!match) {
     console.log("[weekly-meetup-reminder] No global meetup event scheduled for today — skipping.");
     return new Response("No meetup scheduled today.");
   }
+  const { event, occursAt } = match;
 
   const contacts = await getAllChapterContacts();
   console.log(`[weekly-meetup-reminder] Sending "${event.title}" reminder to ${contacts.length} recipients.`);
@@ -21,7 +22,7 @@ const handler = async () => {
   // of one Resend request per recipient.
   const { sent, failed } = await sendWeeklyMeetupReminders(contacts, {
     title: event.title,
-    startsAt: event.startsAt,
+    startsAt: occursAt.toISOString(), // today's computed occurrence, not the original anchor date
     description: event.description,
     link: event.link,
   });
