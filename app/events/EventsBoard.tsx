@@ -11,7 +11,7 @@ import {
   Repeat2,
 } from "lucide-react";
 import type { LaigEvent } from "../lib/store";
-import { nextOccurrence } from "../lib/recurrence";
+import { nextOccurrence, recurrenceDaysLabel } from "../lib/recurrence";
 
 function formatWhen(when: string | Date): string {
   return new Date(when).toLocaleString(undefined, {
@@ -116,10 +116,16 @@ export default function EventsBoard({ events }: { events: LaigEvent[] }) {
                 </span>
               )}
               {e.recurrence === "weekly" && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-                  <Repeat2 className="h-3 w-3" />
-                  Weekly
-                </span>
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                    <Repeat2 className="h-3 w-3" />
+                    Weekly
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                    <CalendarDays className="h-3 w-3" />
+                    {recurrenceDaysLabel(e)}
+                  </span>
+                </>
               )}
             </div>
 

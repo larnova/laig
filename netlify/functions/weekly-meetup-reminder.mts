@@ -2,10 +2,11 @@ import type { Config } from "@netlify/functions";
 import { getAllChapterContacts, getTodaysGlobalMeetup } from "../../app/lib/store";
 import { sendWeeklyMeetupReminders } from "../../app/lib/email";
 
-// Runs every Sunday at 09:00 WAT (Africa/Lagos, UTC+1) — the morning of the
-// weekly LAIG meetup. Looks up the org-wide "meetup" event HQ posted for
-// today via the events dashboard, and skips sending if none is found so a
-// missed weekly posting doesn't blast a stale or empty reminder.
+// Runs every morning at 09:00 WAT (Africa/Lagos, UTC+1) — meetups can now
+// recur on more than one weekday (e.g. Mon/Wed/Fri), so this checks daily
+// rather than assuming Sunday. Looks up the org-wide "meetup" event whose
+// next occurrence falls today, and skips sending if none is found so a day
+// with nothing scheduled doesn't blast a stale or empty reminder.
 const handler = async () => {
   const match = await getTodaysGlobalMeetup();
   if (!match) {
@@ -37,5 +38,5 @@ const handler = async () => {
 export default handler;
 
 export const config: Config = {
-  schedule: "0 8 * * 0", // 08:00 UTC = 09:00 WAT, every Sunday
+  schedule: "0 8 * * *", // 08:00 UTC = 09:00 WAT, every day
 };

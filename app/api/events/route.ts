@@ -31,6 +31,10 @@ export async function POST(request: Request) {
     recurrence === "weekly" && recurrenceEndRaw && !Number.isNaN(Date.parse(recurrenceEndRaw))
       ? new Date(recurrenceEndRaw).toISOString()
       : null;
+  const daysOfWeekRaw: unknown[] = Array.isArray(body.daysOfWeek) ? body.daysOfWeek : [];
+  const isValidDay = (d: unknown): d is number => typeof d === "number" && Number.isInteger(d) && d >= 0 && d <= 6;
+  const daysOfWeekSet = [...new Set(daysOfWeekRaw.filter(isValidDay))];
+  const daysOfWeek = recurrence === "weekly" && daysOfWeekSet.length > 0 ? daysOfWeekSet : null;
 
   if (!title) return Response.json({ ok: false, error: "Title is required." }, { status: 400 });
   if (!startsAt || Number.isNaN(Date.parse(startsAt)))
@@ -73,6 +77,7 @@ export async function POST(request: Request) {
     seriesId: null,
     recurrence,
     recurrenceEnd,
+    daysOfWeek,
   };
 
   const events = await getEvents();

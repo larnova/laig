@@ -88,6 +88,7 @@ export type LaigEvent = {
   seriesId: string | null;
   recurrence: "none" | "weekly";
   recurrenceEnd: string | null; // ISO date; null = repeats indefinitely
+  daysOfWeek: number[] | null; // 0=Sunday..6=Saturday; null = just startsAt's own weekday
 };
 
 export type MagicToken = { email: string; expiresAt: number };
@@ -253,12 +254,13 @@ export async function getTodaysGlobalMeetup(): Promise<{ event: LaigEvent; occur
 export async function getEvents(): Promise<LaigEvent[]> {
   const events = await kvGet<LaigEvent[]>("events", []);
   // Back-compat: events created before recurrence support have no seriesId
-  // (legacy field) or recurrence/recurrenceEnd (new fields).
+  // (legacy field) or recurrence/recurrenceEnd/daysOfWeek (new fields).
   return events.map((e) => ({
     ...e,
     seriesId: e.seriesId ?? null,
     recurrence: e.recurrence ?? "none",
     recurrenceEnd: e.recurrenceEnd ?? null,
+    daysOfWeek: e.daysOfWeek ?? null,
   }));
 }
 

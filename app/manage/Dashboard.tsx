@@ -26,7 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Chapter, ExecMember, LaigEvent, Adviser } from "../lib/store";
-import { nextOccurrence } from "../lib/recurrence";
+import { nextOccurrence, recurrenceDaysLabel, WEEKDAY_ABBR } from "../lib/recurrence";
 
 const GRAD_YEARS = Array.from({ length: 7 }, (_, i) => 2026 + i);
 
@@ -442,9 +442,19 @@ function EventsSection({
     scope: hasChapter ? "chapter" : "global",
     recurrence: "none",
     recurrenceEnd: "",
+    daysOfWeek: [] as number[],
   });
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function toggleDay(day: number) {
+    setForm((f) => ({
+      ...f,
+      daysOfWeek: f.daysOfWeek.includes(day)
+        ? f.daysOfWeek.filter((d) => d !== day)
+        : [...f.daysOfWeek, day],
+    }));
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -474,6 +484,7 @@ function EventsSection({
       scope: hasChapter ? "chapter" : "global",
       recurrence: "none",
       recurrenceEnd: "",
+      daysOfWeek: [],
     });
   }
 
@@ -526,9 +537,15 @@ function EventsSection({
                       </span>
                     )}
                     {(isWeekly || e.seriesId) && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-                        <Repeat2 className="h-3 w-3" /> Weekly
-                      </span>
+                      <>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                          <Repeat2 className="h-3 w-3" /> Weekly
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                          <CalendarDays className="h-3 w-3" />
+                          {recurrenceDaysLabel(e)}
+                        </span>
+                      </>
                     )}
                   </div>
                   <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
@@ -653,20 +670,43 @@ function EventsSection({
             Repeats weekly
           </label>
           {form.recurrence === "weekly" && (
-            <div className="mt-3 flex items-center gap-2">
-              <label htmlFor="recurrenceEnd" className="text-xs text-slate-500">
-                Until (optional)
-              </label>
-              <input
-                id="recurrenceEnd"
-                type="date"
-                value={form.recurrenceEnd}
-                onChange={(e) => setForm({ ...form, recurrenceEnd: e.target.value })}
-                className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-              />
-              <span className="text-xs text-slate-500">
-                same day &amp; time every week. Leave blank to repeat indefinitely.
-              </span>
+            <div className="mt-3 space-y-3">
+              <div>
+                <p className="mb-1.5 text-xs text-slate-500">
+                  Repeat on (defaults to the Date &amp; time field&apos;s own day if none picked)
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {WEEKDAY_ABBR.map((label, day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleDay(day)}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                        form.daysOfWeek.includes(day)
+                          ? "bg-violet-600 text-white"
+                          : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="recurrenceEnd" className="text-xs text-slate-500">
+                  Until (optional)
+                </label>
+                <input
+                  id="recurrenceEnd"
+                  type="date"
+                  value={form.recurrenceEnd}
+                  onChange={(e) => setForm({ ...form, recurrenceEnd: e.target.value })}
+                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                />
+                <span className="text-xs text-slate-500">
+                  same time every occurrence. Leave blank to repeat indefinitely.
+                </span>
+              </div>
             </div>
           )}
         </div>
