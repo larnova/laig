@@ -194,6 +194,39 @@ export async function saveMember(member: MemberRecord): Promise<void> {
   await kvSet(`member:${member.id}`, member);
 }
 
+/** Every campus ambassador + exec across approved chapters, deduplicated by email. */
+export async function getAllChapterContacts(): Promise<{ email: string; name: string }[]> {
+  const chapters = await getChapters();
+  const seen = new Map<string, string>();
+  for (const c of chapters) {
+    if (c.status !== "approved") continue;
+    if (c.ambassadorEmail && !seen.has(normalizeEmail(c.ambassadorEmail))) {
+      seen.set(normalizeEmail(c.ambassadorEmail), c.ambassadorName);
+    }
+    for (const exec of c.execs) {
+      if (exec.email && !seen.has(normalizeEmail(exec.email))) {
+        seen.set(normalizeEmail(exec.email), exec.name);
+      }
+    }
+  }
+  return Array.from(seen, ([email, name]) => ({ email, name }));
+}
+
+/** The org-wide "meetup" event scheduled for today (Africa/Lagos calendar date), if any. */
+export async function getTodaysGlobalMeetup(): Promise<LaigEvent | null> {
+  const events = await getEvents();
+  const dateFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" });
+  const today = dateFormatter.format(new Date());
+
+  const candidates = events
+    .filter((e) => e.chapterId === null)
+    .filter((e) => e.title.toLowerCase().includes("meetup"))
+    .filter((e) => dateFormatter.format(new Date(e.startsAt)) === today);
+
+  candidates.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  return candidates[0] ?? null;
+}
+
 // Events
 export async function getEvents(): Promise<LaigEvent[]> {
   return kvGet<LaigEvent[]>("events", []);
