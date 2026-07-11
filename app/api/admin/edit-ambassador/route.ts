@@ -1,5 +1,12 @@
 import { getManager } from "../../../lib/auth";
-import { getChapters, saveChapters, normalizeEmail } from "../../../lib/store";
+import {
+  getChapters,
+  saveChapters,
+  getEvents,
+  saveEvents,
+  normalizeEmail,
+  normalizeUniversity,
+} from "../../../lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +21,7 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const chapterId = str(body.chapterId);
+  const university = str(body.university);
   const name = str(body.ambassadorName);
   const email = normalizeEmail(str(body.ambassadorEmail));
   const github = str(body.github);
@@ -25,6 +33,7 @@ export async function POST(request: Request) {
       : Number(gradRaw);
 
   if (!chapterId) return Response.json({ ok: false, error: "Missing chapter." }, { status: 400 });
+  if (!university) return Response.json({ ok: false, error: "University name is required." }, { status: 400 });
   if (!name) return Response.json({ ok: false, error: "Name is required." }, { status: 400 });
   if (!EMAIL_RE.test(email))
     return Response.json({ ok: false, error: "Enter a valid email." }, { status: 400 });
@@ -40,6 +49,20 @@ export async function POST(request: Request) {
   const chapter = chapters.find((c) => c.id === chapterId);
   if (!chapter) return Response.json({ ok: false, error: "Chapter not found." }, { status: 404 });
 
+  const key = normalizeUniversity(university);
+  const duplicate = chapters.find(
+    (c) => c.id !== chapterId && normalizeUniversity(c.university) === key
+  );
+  if (duplicate) {
+    return Response.json(
+      { ok: false, error: `${duplicate.university} already has a chapter.` },
+      { status: 400 }
+    );
+  }
+
+  const renamed = normalizeUniversity(chapter.university) !== key;
+
+  chapter.university = university;
   chapter.ambassadorName = name;
   chapter.ambassadorEmail = email;
   chapter.github = github;
@@ -47,6 +70,19 @@ export async function POST(request: Request) {
   chapter.graduationYear = gradYear;
 
   await saveChapters(chapters);
+
+  // Keep the denormalized chapter name on this chapter's events in sync.
+  if (renamed) {
+    const events = await getEvents();
+    let changed = false;
+    for (const ev of events) {
+      if (ev.chapterId === chapterId && ev.chapterName !== university) {
+        ev.chapterName = university;
+        changed = true;
+      }
+    }
+    if (changed) await saveEvents(events);
+  }
 
   return Response.json({ ok: true, chapter });
 }

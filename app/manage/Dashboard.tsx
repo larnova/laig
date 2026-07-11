@@ -1134,6 +1134,7 @@ function ChapterAdminRow({
 
   // Edit form state
   const [editForm, setEditForm] = useState({
+    university: chapter.university,
     ambassadorName: chapter.ambassadorName,
     ambassadorEmail: chapter.ambassadorEmail,
     github: chapter.github || "",
@@ -1154,6 +1155,7 @@ function ChapterAdminRow({
   // Sync state if chapter prop changes
   useEffect(() => {
     setEditForm({
+      university: chapter.university,
       ambassadorName: chapter.ambassadorName,
       ambassadorEmail: chapter.ambassadorEmail,
       github: chapter.github || "",
@@ -1227,6 +1229,7 @@ function ChapterAdminRow({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chapterId: chapter.id,
+        university: editForm.university,
         ambassadorName: editForm.ambassadorName,
         ambassadorEmail: editForm.ambassadorEmail,
         github: editForm.github,
@@ -1452,7 +1455,13 @@ function ChapterAdminRow({
 
       {editOpen && (
         <form onSubmit={editAmbassador} className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Edit Ambassador Info</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Edit Chapter Info</h4>
+          <input
+            value={editForm.university}
+            onChange={(e) => setEditForm({ ...editForm, university: e.target.value })}
+            placeholder="University Name"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 focus:border-violet-400 focus:outline-none"
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             <input
               value={editForm.ambassadorName}
